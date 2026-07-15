@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>声归 - 方言学习平台原型</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-2: #eef3f6;
+      --text: #20242a;
+      --muted: #67717d;
+      --line: #d9e1e7;
+      --teal: #007f73;
+      --teal-2: #e3f5f1;
+      --coral: #d9573d;
+      --amber: #b98010;
+      --ink: #273043;
+      --blue: #3766b1;
+      --green: #2f855a;
+      --shadow: 0 18px 45px rgba(39, 48, 67, 0.11);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background: linear-gradient(180deg, #f7f9fc 0%, #eef3f6 100%);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      min-height: 100vh;
+      padding: 24px 18px;
+      background: #fbfcfd;
+      border-right: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 8px 22px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--teal);
+      border-radius: var(--radius);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dialect-box {
+      padding: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .dialect-box label,
+    .field-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .select {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+      margin: 22px 0;
+    }
+
+    .nav button {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 12px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      text-align: left;
+    }
+
+    .nav button.active {
+      color: var(--teal);
+      background: var(--teal-2);
+      font-weight: 700;
+    }
+
+    .icon {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .model-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .model-chip {
+      padding: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .model-chip span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .model-chip strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .workspace {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      scroll-margin-top: 18px;
+    }
+
+    .title-group h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .title-group p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      color: #fff;
+      background: var(--ink);
+      border-radius: 6px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .btn.teal {
+      background: var(--teal);
+    }
+
+    .btn.coral {
+      background: var(--coral);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(330px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      scroll-margin-top: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .lesson-body {
+      padding: 18px;
+    }
+
+    .stage-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 4px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+    }
+
+    .stage-tab {
+      min-height: 42px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      font-weight: 800;
+    }
+
+    .stage-tab.active {
+      color: #fff;
+      background: var(--teal);
+      box-shadow: 0 8px 18px rgba(0, 127, 115, 0.2);
+    }
+
+    .scene-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .dialogue {
+      min-height: 260px;
+      padding: 18px;
+      background: #fdfefe;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .scene-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 5px 9px;
+      color: var(--teal);
+      background: var(--teal-2);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .prompt {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.42;
+      letter-spacing: 0;
+    }
+
+    .translation {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .phrase-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+    }
+
+    .phrase-row strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .phrase-row span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .wave {
+      display: flex;
+      align-items: end;
+      gap: 4px;
+      height: 42px;
+      min-width: 92px;
+    }
+
+    .wave i {
+      width: 6px;
+      border-radius: 4px;
+      background: var(--teal);
+      animation: wave 1.2s ease-in-out infinite;
+    }
+
+    .wave i:nth-child(2) { height: 28px; animation-delay: .1s; }
+    .wave i:nth-child(3) { height: 36px; animation-delay: .2s; }
+    .wave i:nth-child(4) { height: 22px; animation-delay: .3s; }
+    .wave i:nth-child(5) { height: 32px; animation-delay: .4s; }
+    .wave i:nth-child(6) { height: 18px; animation-delay: .5s; }
+    .wave i:nth-child(1) { height: 20px; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(.72); opacity: .68; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .coach-seat {
+      display: grid;
+      align-content: space-between;
+      min-height: 260px;
+      padding: 16px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 74% 18%, rgba(255,255,255,.2), transparent 28%),
+        linear-gradient(160deg, #273043 0%, #007f73 100%);
+      border-radius: var(--radius);
+    }
+
+    .coach-face {
+      width: 118px;
+      height: 118px;
+      margin: 12px auto;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      font-size: 44px;
+      font-weight: 900;
+    }
+
+    .coach-seat strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .coach-seat span {
+      display: block;
+      margin-top: 6px;
+      color: rgba(255,255,255,.78);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .scenario-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      scroll-margin-top: 18px;
+    }
+
+    .scenario {
+      padding: 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      text-align: left;
+    }
+
+    .scenario.active {
+      border-color: var(--teal);
+      box-shadow: inset 0 0 0 1px var(--teal);
+    }
+
+    .scenario strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .scenario span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .right-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .recorder {
+      padding: 18px;
+    }
+
+    .record-orb {
+      display: grid;
+      place-items: center;
+      width: 116px;
+      height: 116px;
+      margin: 8px auto 18px;
+      color: #fff;
+      background: var(--coral);
+      border-radius: 50%;
+      box-shadow: 0 18px 34px rgba(217, 87, 61, .28);
+      font-size: 38px;
+    }
+
+    .record-orb.recording {
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .record-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .audio-player {
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .hint-line {
+      min-height: 24px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .score-card {
+      padding: 18px;
+    }
+
+    .score-top {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    .score-ring {
+      width: 112px;
+      height: 112px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        conic-gradient(var(--teal) 0 82%, #e6edf2 82% 100%);
+    }
+
+    .score-ring div {
+      width: 82px;
+      height: 82px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      border-radius: 50%;
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .score-copy strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+
+    .score-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .metric-list {
+      display: grid;
+      gap: 11px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) 36px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 8px;
+      background: #e6edf2;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar b {
+      display: block;
+      height: 100%;
+      background: var(--teal);
+      border-radius: inherit;
+    }
+
+    .clone-panel {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .clone-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      background: #fff7ed;
+      border: 1px solid #ffd8a8;
+      border-radius: var(--radius);
+    }
+
+    .clone-status strong {
+      display: block;
+      color: #8a4f00;
+    }
+
+    .clone-status span {
+      color: #8a4f00;
+      font-size: 12px;
+    }
+
+    .feature-matrix {
+      margin-top: 18px;
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .matrix-item {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .matrix-item em {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      margin-bottom: 10px;
+      color: #fff;
+      background: var(--blue);
+      border-radius: 6px;
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .matrix-item:nth-child(2) em { background: var(--coral); }
+    .matrix-item:nth-child(3) em { background: var(--teal); }
+    .matrix-item:nth-child(4) em { background: var(--amber); }
+
+    .matrix-item strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .matrix-item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1120px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        min-height: auto;
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(240px, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .brand {
+        grid-column: 1 / -1;
+        padding-bottom: 4px;
+      }
+
+      .nav {
+        margin: 0;
+      }
+
+      .model-stack {
+        margin-top: 0;
+      }
+
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .workspace,
+      .sidebar {
+        padding: 16px;
+      }
+
+      .sidebar,
+      .scene-board,
+      .scenario-strip,
+      .matrix-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar,
+      .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .toolbar {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .toolbar .btn {
+        flex: 1 1 auto;
+      }
+
+      .title-group h1 {
+        font-size: 24px;
+      }
+
+      .prompt {
+        font-size: 20px;
+      }
+
+      .score-top {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand" aria-label="声归">
+        <div class="brand-mark">声</div>
+        <div>
+          <strong>声归</strong>
+          <span>方言沉浸学习工作台</span>
+        </div>
+      </div>
+
+      <div class="dialect-box">
+        <label for="dialect">学习方言</label>
+        <select class="select" id="dialect">
+          <option value="yue">粤语 · 广府片</option>
+          <option value="wu">吴语 · 苏沪嘉小片</option>
+          <option value="minnan">闽南语 · 泉漳片</option>
+          <option value="southwest">西南官话 · 成渝片</option>
+        </select>
+      </div>
+
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-nav-target="practiceSection"><span class="icon">⌂</span><span>今日练习</span></button>
+        <button data-nav-target="treeSection"><span class="icon">▦</span><span>情境技能树</span></button>
+        <button data-nav-target="assessmentSection"><span class="icon">◎</span><span>口音评测</span></button>
+        <button data-nav-target="voiceCloneSection"><span class="icon">◈</span><span>镜像音色</span></button>
+      </nav>
+
+      <div class="model-stack" aria-label="模型状态">
+        <div class="model-chip">
+          <span>语音识别与评价</span>
+          <strong>SenseVoice-Small</strong>
+        </div>
+        <div class="model-chip">
+          <span>Zero-Shot 音色克隆</span>
+          <strong>CosyVoice 2</strong>
+        </div>
+        <div class="model-chip">
+          <span>数字人</span>
+          <strong>Live2D 暂不启用</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar" id="practiceSection">
+        <div class="title-group">
+          <h1 id="lessonTitle">菜场生存 · 第 02 关</h1>
+          <p id="lessonSubtitle">用真实母语者音频完成询价、称重与还价三个交际动作。</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn secondary" id="playNative"><span class="icon">▶</span>母语者示范</button>
+          <button class="btn teal" id="nextTask"><span class="icon">↻</span>换一个任务</button>
+        </div>
+      </header>
+
+      <section class="dashboard">
+        <div>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>3D 进阶练习</h2>
+              <span>情境感知 → 镜像演练 → 实境部署</span>
+            </div>
+            <div class="lesson-body">
+              <div class="stage-tabs" role="tablist" aria-label="学习阶段">
+                <button class="stage-tab active" data-stage="discover">情境感知</button>
+                <button class="stage-tab" data-stage="demonstrate">镜像演练</button>
+                <button class="stage-tab" data-stage="deploy">实境部署</button>
+              </div>
+
+              <div class="scene-board">
+                <article class="dialogue">
+                  <span class="scene-tag" id="stageTag">情境感知</span>
+                  <p class="prompt" id="dialectPrompt">阿姐，呢个番茄点卖呀？帮我称两斤。</p>
+                  <p class="translation" id="mandarinLine">普通话：姐姐，这个番茄怎么卖？帮我称两斤。</p>
+                  <div class="phrase-row">
+                    <div>
+                      <strong id="targetChunk">点卖呀</strong>
+                      <span id="chunkNote">核心语块：询价时语气要上扬，尾音收得轻一点。</span>
+                    </div>
+                    <div class="wave" aria-hidden="true">
+                      <i></i><i></i><i></i><i></i><i></i><i></i>
+                    </div>
+                  </div>
+                  <div class="phrase-row">
+                    <div>
+                      <strong id="missionTitle">信息差任务</strong>
+                      <span id="missionText">摊主只说了单价，没有主动问重量。你需要补全“称两斤”的请求。</span>
+                    </div>
+                    <button class="btn secondary" id="showHint"><span class="icon">?</span>提示</button>
+                  </div>
+                </article>
+
+                <aside class="coach-seat" aria-label="陪练席">
+                  <div>
+                    <strong>陪练席</strong>
+                    <span>保留非评判式反馈位，后续接入 Live2D 口型与情绪映射。</span>
+                  </div>
+                  <div class="coach-face">归</div>
+                  <div>
+                    <strong id="coachMood">状态：耐心听你说</strong>
+                    <span id="coachLine">先跟读核心语块，再把整句话连起来。</span>
+                  </div>
+                </aside>
+              </div>
+
+              <div class="scenario-strip" id="treeSection" aria-label="情境技能树">
+                <button class="scenario active" data-scene="market">
+                  <strong>菜场生存</strong>
+                  <span>询价、称重、还价、寒暄收尾</span>
+                </button>
+                <button class="scenario" data-scene="family">
+                  <strong>亲戚社交</strong>
+                  <span>称呼、问候、回应关心、礼貌转移</span>
+                </button>
+                <button class="scenario" data-scene="office">
+                  <strong>职场防御</strong>
+                  <span>委婉拒绝、确认边界、快速复述</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel feature-matrix">
+            <div class="panel-header">
+              <h3>声归核心设计</h3>
+              <span>从静态档案转向真实交际</span>
+            </div>
+            <div class="matrix-grid">
+              <div class="matrix-item">
+                <em>1</em>
+                <strong>原真沉浸</strong>
+                <p>使用本土专家与高龄母语者录音，保留连读、变调与情绪色彩。</p>
+              </div>
+              <div class="matrix-item">
+                <em>2</em>
+                <strong>情感降噪</strong>
+                <p>以陪伴式反馈降低开口压力，避免机械纠错带来的语言焦虑。</p>
+              </div>
+              <div class="matrix-item">
+                <em>3</em>
+                <strong>镜像赋能</strong>
+                <p>评测后生成带有用户音色特征的标准示范，强化自我效能感。</p>
+              </div>
+              <div class="matrix-item">
+                <em>4</em>
+                <strong>语用驱动</strong>
+                <p>围绕真实任务设计关卡，让学习从背诵转向可迁移的交际能力。</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="right-stack">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>开口练习</h3>
+              <span id="recordTimer">00:00</span>
+            </div>
+            <div class="recorder">
+              <div class="record-orb" id="recordOrb">●</div>
+              <div class="record-actions">
+                <button class="btn coral" id="recordBtn"><span class="icon">●</span>录音</button>
+                <button class="btn teal" id="evaluateBtn"><span class="icon">✓</span>评测</button>
+              </div>
+              <audio class="audio-player" id="audioPlayer" controls hidden></audio>
+              <p class="hint-line" id="recordHint">浏览器允许麦克风后，可录制一句跟读音频。</p>
+            </div>
+          </section>
+
+          <section class="panel" id="assessmentSection">
+            <div class="panel-header">
+              <h3>SenseVoice 评价</h3>
+              <span id="evalStatus">等待录音</span>
+            </div>
+            <div class="score-card">
+              <div class="score-top">
+                <div class="score-ring" id="scoreRing">
+                  <div id="scoreValue">82</div>
+                </div>
+                <div class="score-copy">
+                  <strong id="scoreTitle">连读自然度不错</strong>
+                  <p id="scoreAdvice">“点卖呀”的尾音略重，建议把最后一个音节放轻，并把“番茄点卖”连成一个气口。</p>
+                </div>
+              </div>
+              <div class="metric-list">
+                <div class="metric"><span>声母</span><div class="bar"><b id="mInitial" style="width:86%"></b></div><strong id="vInitial">86</strong></div>
+                <div class="metric"><span>韵母</span><div class="bar"><b id="mFinal" style="width:78%"></b></div><strong id="vFinal">78</strong></div>
+                <div class="metric"><span>声调</span><div class="bar"><b id="mTone" style="width:80%"></b></div><strong id="vTone">80</strong></div>
+                <div class="metric"><span>连读</span><div class="bar"><b id="mFlow" style="width:83%"></b></div><strong id="vFlow">83</strong></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="voiceCloneSection">
+            <div class="panel-header">
+              <h3>CosyVoice 2 镜像示范</h3>
+              <span id="cloneStatus">可生成</span>
+            </div>
+            <div class="clone-panel">
+              <div class="clone-status">
+                <div>
+                  <strong id="cloneTitle">用户音色标准示范</strong>
+                  <span id="cloneText">评测完成后生成同一句标准方言音频。</span>
+                </div>
+                <button class="btn secondary" id="cloneBtn"><span class="icon">◇</span>生成</button>
+              </div>
+              <audio class="audio-player" id="clonePlayer" controls hidden></audio>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <p class="footer-note">当前页面为可调整界面的前端原型；若通过 FastAPI 启动，将优先调用后端接口，否则自动使用本地模拟结果。</p>
+    </main>
+  </div>
+
+  <script>
+    const lessonBank = {
+      yue: {
+        market: {
+          title: "菜场生存 · 第 02 关",
+          subtitle: "用粤语完成询价、称重与还价三个交际动作。",
+          prompt: "阿姐，呢个番茄点卖呀？帮我称两斤。",
+          mandarin: "普通话：姐姐，这个番茄怎么卖？帮我称两斤。",
+          chunk: "点卖呀",
+          note: "核心语块：询价时语气要上扬，尾音收得轻一点。",
+          mission: "摊主只说了单价，没有主动问重量。你需要补全“称两斤”的请求。",
+          coach: "先跟读核心语块，再把整句话连起来。"
+        },
+        family: {
+          title: "亲戚社交 · 第 01 关",
+          subtitle: "用粤语在家宴中完成称呼、问候和礼貌回应。",
+          prompt: "姑妈，好耐冇见，最近身子点呀？",
+          mandarin: "普通话：姑妈，好久不见，最近身体怎么样？",
+          chunk: "好耐冇见",
+          note: "核心语块：问候开头要亲近，但不要拖得太长。",
+          mission: "长辈先问你工作忙不忙。你需要先回应关心，再自然转回问候。",
+          coach: "这句重在亲切感，语速可以比普通话慢半拍。"
+        },
+        office: {
+          title: "职场防御 · 第 03 关",
+          subtitle: "用粤语完成委婉拒绝、确认边界与复述。",
+          prompt: "呢件事我今晚未必赶得切，我先同你确认下重点。",
+          mandarin: "普通话：这件事我今晚不一定赶得及，我先和你确认一下重点。",
+          chunk: "未必赶得切",
+          note: "核心语块：表达边界时保持平稳，避免听起来像直接顶回去。",
+          mission: "对方只给了模糊截止时间。你需要复述交付内容并确认优先级。",
+          coach: "先把边界说稳，再补一个协作动作，听起来更得体。"
+        }
+      },
+      wu: {
+        market: {
+          title: "菜场生存 · 第 02 关",
+          subtitle: "用吴语完成询价、称重与还价三个交际动作。",
+          prompt: "阿姐，搿个番茄几钿一斤？帮我称两斤。",
+          mandarin: "普通话：姐姐，这个番茄多少钱一斤？帮我称两斤。",
+          chunk: "几钿一斤",
+          note: "核心语块：询价时“几钿”要短促，句尾保持轻问。",
+          mission: "摊主只报了大概价格。你需要确认单价，再补上“两斤”的重量。",
+          coach: "先抓住“搿个”和“几钿”的口型，再把整句顺下来。"
+        },
+        family: {
+          title: "亲戚社交 · 第 01 关",
+          subtitle: "用吴语在家宴中完成称呼、问候和礼貌回应。",
+          prompt: "阿姨，好久勿见，近来身体好伐？",
+          mandarin: "普通话：阿姨，好久不见，最近身体好吗？",
+          chunk: "好伐",
+          note: "核心语块：句尾“伐”要轻，像自然确认而不是追问。",
+          mission: "长辈问你近况。你需要先回应，再用“好伐”把关心递回去。",
+          coach: "这句重点是柔和收尾，别把句尾压得太重。"
+        },
+        office: {
+          title: "职场防御 · 第 03 关",
+          subtitle: "用吴语完成委婉拒绝、确认边界与复述。",
+          prompt: "搿件事我今朝未必来得及，我先搭侬确认重点。",
+          mandarin: "普通话：这件事我今天不一定来得及，我先和你确认重点。",
+          chunk: "未必来得及",
+          note: "核心语块：边界表达要稳，后半句用“确认重点”补上协作感。",
+          mission: "对方给了模糊需求。你需要复述交付内容，并确认优先级。",
+          coach: "先把“未必”说清楚，再用后半句降低对抗感。"
+        }
+      },
+      minnan: {
+        market: {
+          title: "菜场生存 · 第 02 关",
+          subtitle: "用闽南语完成询价、称重与还价三个交际动作。",
+          prompt: "阿姊，遮个番茄按怎卖？帮我秤两斤。",
+          mandarin: "普通话：姐姐，这个番茄怎么卖？帮我称两斤。",
+          chunk: "按怎卖",
+          note: "核心语块：“按怎”要连读，后面的“卖”轻轻抬起。",
+          mission: "摊主等你开口确认买法。你需要先问价格，再说清楚重量。",
+          coach: "先练“按怎卖”的连读，再把前后语块接起来。"
+        },
+        family: {
+          title: "亲戚社交 · 第 01 关",
+          subtitle: "用闽南语在家宴中完成称呼、问候和礼貌回应。",
+          prompt: "阿姑，真久无看着，最近身体敢好？",
+          mandarin: "普通话：姑姑，很久没见，最近身体还好吗？",
+          chunk: "敢好",
+          note: "核心语块：问候时语气要放软，像关心而不是检查。",
+          mission: "亲戚问你最近忙不忙。你需要先回答，再礼貌反问身体情况。",
+          coach: "这句要有熟人之间的温度，语速不宜太快。"
+        },
+        office: {
+          title: "职场防御 · 第 03 关",
+          subtitle: "用闽南语完成委婉拒绝、确认边界与复述。",
+          prompt: "这件代志我今暗未必赶会切，我先佮你确认重点。",
+          mandarin: "普通话：这件事情我今晚未必赶得及，我先和你确认重点。",
+          chunk: "未必赶会切",
+          note: "核心语块：把“未必”说稳，再用“确认重点”表达愿意协作。",
+          mission: "对方只强调很急。你需要说明今晚风险，并确认最重要的交付项。",
+          coach: "边界要说得清楚，但后半句要保持合作语气。"
+        }
+      },
+      southwest: {
+        market: {
+          title: "菜场生存 · 第 02 关",
+          subtitle: "用西南官话完成询价、称重与还价三个交际动作。",
+          prompt: "嬢嬢，这个番茄好多钱一斤嘛？帮我称两斤。",
+          mandarin: "普通话：阿姨，这个番茄多少钱一斤？帮我称两斤。",
+          chunk: "好多钱一斤嘛",
+          note: "核心语块：“好多钱”要自然连起来，句尾“嘛”放轻。",
+          mission: "摊主没有主动报价。你需要先问单价，再补全称重请求。",
+          coach: "这句重点是生活感，不要读成播音腔。"
+        },
+        family: {
+          title: "亲戚社交 · 第 01 关",
+          subtitle: "用西南官话在家宴中完成称呼、问候和礼貌回应。",
+          prompt: "嬢嬢，好久没看到你了，最近身体还可以噻？",
+          mandarin: "普通话：阿姨，好久没见到你了，最近身体还可以吧？",
+          chunk: "还可以噻",
+          note: "核心语块：句尾“噻”带一点亲近确认，不要拖太长。",
+          mission: "长辈先关心你。你需要先回答，再自然反问身体情况。",
+          coach: "这句要像熟人聊天，重点是轻松和顺口。"
+        },
+        office: {
+          title: "职场防御 · 第 03 关",
+          subtitle: "用西南官话完成委婉拒绝、确认边界与复述。",
+          prompt: "这个事我今晚不一定赶得拢，我先跟你确认哈重点。",
+          mandarin: "普通话：这件事我今晚不一定赶得及，我先和你确认一下重点。",
+          chunk: "赶得拢",
+          note: "核心语块：“赶得拢”要说得稳，后面的“确认哈”缓和语气。",
+          mission: "对方只说今晚要。你需要说明风险，并确认最优先的部分。",
+          coach: "先把时间边界说清楚，再用“确认哈”把协作感补回来。"
+        }
+      }
+    };
+
+    const stages = {
+      discover: {
+        tag: "情境感知",
+        coachMood: "状态：耐心听你说"
+      },
+      demonstrate: {
+        tag: "镜像演练",
+        coachMood: "状态：正在比对发音"
+      },
+      deploy: {
+        tag: "实境部署",
+        coachMood: "状态：准备通关反馈"
+      }
+    };
+
+    const state = {
+      dialect: "yue",
+      scene: "market",
+      stage: "discover",
+      recorder: null,
+      chunks: [],
+      startedAt: 0,
+      timerId: null,
+      audioBlob: null,
+      audioFileName: "practice.wav"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function getLesson(scene = state.scene) {
+      const bank = lessonBank[state.dialect] || lessonBank.yue;
+      return bank[scene] || bank.market;
+    }
+
+    function getDialectLabel() {
+      const selected = $("dialect").selectedOptions[0];
+      return selected ? selected.textContent : "当前方言";
+    }
+
+    function resetAssessmentCopy(lesson) {
+      $("evalStatus").textContent = "等待录音";
+      $("scoreTitle").textContent = "等待开口练习";
+      $("scoreAdvice").textContent = `当前目标语块是“${lesson.chunk}”。录音后会用 SenseVoice-Small 给出声母、韵母、声调和连读建议。`;
+      $("cloneStatus").textContent = "可生成";
+      $("cloneTitle").textContent = "用户音色标准示范";
+      $("cloneText").textContent = `评测完成后生成“${lesson.chunk}”相关的用户音色标准示范。`;
+    }
+
+    function setScene(scene) {
+      state.scene = scene;
+      const lesson = getLesson(scene);
+      $("lessonTitle").textContent = lesson.title;
+      $("lessonSubtitle").textContent = lesson.subtitle;
+      $("dialectPrompt").textContent = lesson.prompt;
+      $("mandarinLine").textContent = lesson.mandarin;
+      $("targetChunk").textContent = lesson.chunk;
+      $("chunkNote").textContent = lesson.note;
+      $("missionText").textContent = lesson.mission;
+      $("coachLine").textContent = lesson.coach;
+      resetAssessmentCopy(lesson);
+      document.querySelectorAll(".scenario").forEach((button) => {
+        button.classList.toggle("active", button.dataset.scene === scene);
+      });
+    }
+
+    function setDialect(dialect) {
+      state.dialect = dialect;
+      setScene(state.scene);
+      $("recordHint").textContent = `已切换到${getDialectLabel()}，可以录制当前句进行评测。`;
+    }
+
+    function setStage(stage) {
+      state.stage = stage;
+      $("stageTag").textContent = stages[stage].tag;
+      $("coachMood").textContent = stages[stage].coachMood;
+      document.querySelectorAll(".stage-tab").forEach((button) => {
+        button.classList.toggle("active", button.dataset.stage === stage);
+      });
+    }
+
+    function setScore(result) {
+      const score = Math.max(0, Math.min(100, result.score));
+      $("scoreValue").textContent = score;
+      $("scoreRing").style.background = `conic-gradient(var(--teal) 0 ${score}%, #e6edf2 ${score}% 100%)`;
+      $("scoreTitle").textContent = result.title;
+      $("scoreAdvice").textContent = result.advice;
+      const metrics = [
+        ["Initial", result.metrics.initial],
+        ["Final", result.metrics.final],
+        ["Tone", result.metrics.tone],
+        ["Flow", result.metrics.flow]
+      ];
+      metrics.forEach(([name, value]) => {
+        $(`m${name}`).style.width = `${value}%`;
+        $(`v${name}`).textContent = value;
+      });
+    }
+
+    function fallbackEvaluation() {
+      const score = 78 + Math.floor(Math.random() * 14);
+      const lesson = getLesson();
+      return {
+        score,
+        title: score >= 86 ? "已经接近自然交际" : "核心语块还可以更轻",
+        advice: score >= 86
+          ? `整句气口比较稳定，可以进入实境部署任务，把“${lesson.chunk}”放进半开放对话。`
+          : `“${lesson.chunk}”的尾音和声调转折还可以更自然，建议先慢读核心语块，再恢复正常语速。`,
+        metrics: {
+          initial: 82 + Math.floor(Math.random() * 10),
+          final: 76 + Math.floor(Math.random() * 12),
+          tone: 78 + Math.floor(Math.random() * 12),
+          flow: 74 + Math.floor(Math.random() * 16)
+        }
+      };
+    }
+
+    function writeAscii(view, offset, text) {
+      for (let i = 0; i < text.length; i += 1) {
+        view.setUint8(offset + i, text.charCodeAt(i));
+      }
+    }
+
+    function audioBufferToWav(audioBuffer) {
+      const channels = Math.min(audioBuffer.numberOfChannels, 2);
+      const samples = audioBuffer.length;
+      const sampleRate = audioBuffer.sampleRate;
+      const blockAlign = channels * 2;
+      const buffer = new ArrayBuffer(44 + samples * blockAlign);
+      const view = new DataView(buffer);
+
+      writeAscii(view, 0, "RIFF");
+      view.setUint32(4, 36 + samples * blockAlign, true);
+      writeAscii(view, 8, "WAVE");
+      writeAscii(view, 12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, channels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeAscii(view, 36, "data");
+      view.setUint32(40, samples * blockAlign, true);
+
+      const channelData = Array.from({ length: channels }, (_, index) => audioBuffer.getChannelData(index));
+      let offset = 44;
+      for (let i = 0; i < samples; i += 1) {
+        for (let channel = 0; channel < channels; channel += 1) {
+          const value = Math.max(-1, Math.min(1, channelData[channel][i]));
+          view.setInt16(offset, value < 0 ? value * 0x8000 : value * 0x7fff, true);
+          offset += 2;
+        }
+      }
+      return buffer;
+    }
+
+    async function convertBlobToWav(blob) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error("AudioContext unavailable");
+      const context = new AudioContextClass();
+      try {
+        const audioBuffer = await context.decodeAudioData(await blob.arrayBuffer());
+        return new Blob([audioBufferToWav(audioBuffer)], { type: "audio/wav" });
+      } finally {
+        if (context.close) await context.close();
+      }
+    }
+
+    async function evaluateAudio() {
+      $("evalStatus").textContent = "评测中";
+      const form = new FormData();
+      form.append("dialect", state.dialect);
+      form.append("scene", state.scene);
+      form.append("stage", state.stage);
+      if (state.audioBlob) {
+        form.append("audio", state.audioBlob, state.audioFileName || "practice.wav");
+      }
+      try {
+        const response = await fetch("/api/evaluate", { method: "POST", body: form });
+        if (!response.ok) throw new Error("bad response");
+        const result = await response.json();
+        setScore(result);
+        $("evalStatus").textContent = "已完成";
+      } catch (error) {
+        setScore(fallbackEvaluation());
+        $("evalStatus").textContent = "本地模拟";
+      }
+    }
+
+    function updateTimer() {
+      const seconds = Math.floor((Date.now() - state.startedAt) / 1000);
+      const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const ss = String(seconds % 60).padStart(2, "0");
+      $("recordTimer").textContent = `${mm}:${ss}`;
+    }
+
+    async function toggleRecording() {
+      if (state.recorder && state.recorder.state === "recording") {
+        state.recorder.stop();
+        return;
+      }
+      if (!navigator.mediaDevices || !window.MediaRecorder) {
+        $("recordHint").textContent = "当前浏览器无法直接录音，可以先调界面，再接入上传入口。";
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.chunks = [];
+        state.recorder = new MediaRecorder(stream);
+        state.recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) state.chunks.push(event.data);
+        };
+        state.recorder.onstop = async () => {
+          stream.getTracks().forEach((track) => track.stop());
+          const rawBlob = new Blob(state.chunks, { type: "audio/webm" });
+          state.audioBlob = rawBlob;
+          state.audioFileName = "practice.webm";
+          let playbackBlob = rawBlob;
+          try {
+            const wavBlob = await convertBlobToWav(rawBlob);
+            state.audioBlob = wavBlob;
+            state.audioFileName = "practice.wav";
+            playbackBlob = wavBlob;
+            $("recordHint").textContent = "录音已转为 WAV，可以点击评测。";
+          } catch (error) {
+            $("recordHint").textContent = "录音已就绪，但浏览器未能转 WAV；本地模型会回退模拟结果。";
+          }
+          $("audioPlayer").src = URL.createObjectURL(playbackBlob);
+          $("audioPlayer").hidden = false;
+          $("recordBtn").innerHTML = '<span class="icon">●</span>录音';
+          $("recordOrb").classList.remove("recording");
+          clearInterval(state.timerId);
+        };
+        state.recorder.start();
+        state.startedAt = Date.now();
+        state.timerId = setInterval(updateTimer, 250);
+        $("recordBtn").innerHTML = '<span class="icon">■</span>停止';
+        $("recordOrb").classList.add("recording");
+        $("recordHint").textContent = "正在录音，读完后点击停止。";
+      } catch (error) {
+        $("recordHint").textContent = "麦克风未授权，当前可继续查看页面与模拟评测。";
+      }
+    }
+
+    async function clonePreview() {
+      $("cloneStatus").textContent = "生成中";
+      const form = new FormData();
+      form.append("dialect", state.dialect);
+      form.append("scene", state.scene);
+      if (state.audioBlob) {
+        const speakerName = state.audioFileName ? state.audioFileName.replace("practice", "speaker") : "speaker.wav";
+        form.append("speaker_audio", state.audioBlob, speakerName);
+      }
+      try {
+        const response = await fetch("/api/clone-preview", { method: "POST", body: form });
+        if (!response.ok) throw new Error("bad response");
+        const result = await response.json();
+        $("cloneTitle").textContent = result.title;
+        $("cloneText").textContent = result.message;
+        if (result.audio_url) {
+          $("clonePlayer").src = result.audio_url;
+          $("clonePlayer").hidden = false;
+        }
+        $("cloneStatus").textContent = "已生成";
+      } catch (error) {
+        $("cloneTitle").textContent = "已生成模拟示范";
+        $("cloneText").textContent = `后端接入 CosyVoice 3.0 后，这里会返回${getDialectLabel()}的用户音色标准示范。`;
+        $("cloneStatus").textContent = "本地模拟";
+      }
+    }
+
+    function setActiveNav(targetId) {
+      document.querySelectorAll(".nav button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.navTarget === targetId);
+      });
+    }
+
+    function scrollToSection(targetId) {
+      const target = $(targetId);
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveNav(targetId);
+    }
+
+    document.querySelectorAll(".scenario").forEach((button) => {
+      button.addEventListener("click", () => setScene(button.dataset.scene));
+    });
+
+    document.querySelectorAll(".stage-tab").forEach((button) => {
+      button.addEventListener("click", () => setStage(button.dataset.stage));
+    });
+
+    document.querySelectorAll(".nav button").forEach((button) => {
+      button.addEventListener("click", () => scrollToSection(button.dataset.navTarget));
+    });
+
+    $("dialect").addEventListener("change", (event) => setDialect(event.target.value));
+    $("recordBtn").addEventListener("click", toggleRecording);
+    $("evaluateBtn").addEventListener("click", evaluateAudio);
+    $("cloneBtn").addEventListener("click", clonePreview);
+    $("nextTask").addEventListener("click", () => {
+      const keys = Object.keys(lessonBank[state.dialect] || lessonBank.yue);
+      const next = keys[(keys.indexOf(state.scene) + 1) % keys.length];
+      setScene(next);
+    });
+    $("showHint").addEventListener("click", () => {
+      $("coachLine").textContent = getLesson().note;
+    });
+    $("playNative").addEventListener("click", () => {
+      $("recordHint").textContent = `${getDialectLabel()}示范音频位已触发；接入母语者素材库后会播放当前句。`;
+    });
+
+    setScene("market");
+    setStage("discover");
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+# Local assistant and workspace state
+.agents/
+.codex/
+
+# Generated outputs and prototypes
+outputs/
+
+# Python environments and caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local build and temporary files
+.tmp/
+**/.tmp/
+tmp/
+**/tmp/
+temp/
+**/temp/
+*.tmp
+*.bak
+
+# Server runtime files
+*.log
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Model weights, checkpoints, and large local artifacts
+models/
+checkpoints/
+downloads/
+cache/
+*.gguf
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# User uploads and generated media
+uploads/
+generated/
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.mp4
+*.webm
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/

@@ -1,0 +1,1 @@
+"""Shenggui FastAPI application package."""
