@@ -53,3 +53,7 @@ $env:SHENGGUI_SENSEVOICE_VAD_GGUF="D:\shenggui\SenseVoicePublic\funasr-gguf\fsmn
 当前 MVP 里，SenseVoice-Small 先承担 ASR 识别，评分采用“识别文本 vs 目标文本”的轻量相似度评估。真正的声母、韵母、声调细粒度评价，后续建议再接音素/声调对齐器或训练专项评分模型。
 
 更多本地部署步骤见 [docs/model-integration.md](docs/model-integration.md)。
+
+## 近期更新
+
+- [2026-07-16 本地模型启动与 CosyVoice 依赖检查更新](docs/update-2026-07-16.md)

@@ -241,7 +241,13 @@ class CosyVoiceAdapter:
             repo_path = Path(self.settings.cosyvoice_repo).resolve()
             if not repo_path.exists():
                 raise RuntimeError(f"CosyVoice repo not found: {repo_path}")
-            for path in (repo_path, repo_path / "third_party" / "Matcha-TTS"):
+            matcha_path = repo_path / "third_party" / "Matcha-TTS"
+            if not (matcha_path / "matcha").exists():
+                raise RuntimeError(
+                    "CosyVoice Matcha-TTS submodule not found. Put the Matcha-TTS "
+                    f"repo contents under {matcha_path} or clone CosyVoice with --recursive."
+                )
+            for path in (repo_path, matcha_path):
                 path_text = str(path)
                 if path_text not in sys.path:
                     sys.path.insert(0, path_text)

@@ -42,6 +42,8 @@ def index() -> FileResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, object]:
+    cosy_repo = Path(settings.cosyvoice_repo) if settings.cosyvoice_repo else None
+    matcha_dir = cosy_repo / "third_party" / "Matcha-TTS" if cosy_repo else None
     return {
         "ok": True,
         "backend": settings.model_backend,
@@ -59,6 +61,8 @@ def health() -> dict[str, object]:
                 "ready": voice_clone_service.model_ready,
                 "repo": settings.cosyvoice_repo,
                 "model_dir": settings.cosyvoice_model_dir,
+                "matcha_tts": str(matcha_dir or ""),
+                "matcha_ready": bool(matcha_dir and (matcha_dir / "matcha").exists()),
             },
             "live2d": "disabled",
         },
