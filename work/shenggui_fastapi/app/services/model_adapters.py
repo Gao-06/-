@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import uuid
 from difflib import SequenceMatcher
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
@@ -29,11 +31,28 @@ def _safe_suffix(filename: str | None, default: str) -> str:
     return suffix if suffix else default
 
 
-def _write_temp_audio(audio_bytes: bytes, filename: str | None, default_suffix: str) -> Path:
+def _write_temp_audio(
+    audio_bytes: bytes,
+    filename: str | None,
+    default_suffix: str,
+    directory: Path | None = None,
+) -> Path:
     suffix = _safe_suffix(filename=filename, default=default_suffix)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=suffix,
+        dir=str(directory) if directory is not None else None,
+    ) as temp_file:
         temp_file.write(audio_bytes)
         return Path(temp_file.name)
+
+
+def _format_cosyvoice3_prompt(prompt_text: str) -> str:
+    if "<|endofprompt|>" in prompt_text:
+        return prompt_text
+    return f"You are a helpful assistant.<|endofprompt|>{prompt_text}"
 
 
 def text_similarity(expected: str, actual: str) -> float:
@@ -251,6 +270,12 @@ class CosyVoiceAdapter:
                 path_text = str(path)
                 if path_text not in sys.path:
                     sys.path.insert(0, path_text)
+            if find_spec("pkg_resources") is None:
+                raise RuntimeError(
+                    "CosyVoice dependency pkg_resources not found. The current "
+                    "setuptools version may be too new; install a setuptools release "
+                    "that still provides pkg_resources, for example setuptools==80.9.0."
+                )
 
         from cosyvoice.cli.cosyvoice import AutoModel
         import torchaudio
@@ -274,25 +299,41 @@ class CosyVoiceAdapter:
         assert self._torchaudio is not None
 
         self.settings.generated_audio_dir.mkdir(parents=True, exist_ok=True)
-        prompt_path = _write_temp_audio(speaker_audio, filename, ".wav")
-        output_path = self.settings.generated_audio_dir / f"clone_{uuid.uuid4().hex}.wav"
+        runtime_audio_dir = Path(self.settings.cosyvoice_audio_dir)
+        prompt_dir = runtime_audio_dir / "prompt"
+        output_dir = runtime_audio_dir / "generated"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        output_name = f"clone_{uuid.uuid4().hex}.wav"
+        prompt_path = _write_temp_audio(speaker_audio, filename, ".wav", directory=prompt_dir)
+        work_output_path = output_dir / output_name
+        public_output_path = self.settings.generated_audio_dir / output_name
+        inference_prompt_text = (
+            _format_cosyvoice3_prompt(prompt_text)
+            if (Path(self.settings.cosyvoice_model_dir) / "cosyvoice3.yaml").exists()
+            else prompt_text
+        )
 
         try:
             for _, chunk in enumerate(
                 self._model.inference_zero_shot(
                     target_text,
-                    prompt_text,
+                    inference_prompt_text,
                     str(prompt_path),
                     stream=False,
                 )
             ):
                 self._torchaudio.save(
-                    str(output_path),
+                    str(work_output_path),
                     chunk["tts_speech"],
                     self._model.sample_rate,
                 )
                 break
+            if not work_output_path.exists():
+                raise RuntimeError("CosyVoice did not return generated audio.")
+            shutil.copyfile(work_output_path, public_output_path)
         finally:
             prompt_path.unlink(missing_ok=True)
+            work_output_path.unlink(missing_ok=True)
 
-        return f"/static/generated/{output_path.name}"
+        return f"/static/generated/{public_output_path.name}"

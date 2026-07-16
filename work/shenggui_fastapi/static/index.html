@@ -208,6 +208,15 @@
       font-size: 14px;
     }
 
+    .title-group .native-status {
+      margin-top: 5px;
+      font-size: 12px;
+    }
+
+    .title-group .native-status.ready {
+      color: var(--teal);
+    }
+
     .toolbar {
       display: flex;
       align-items: center;
@@ -792,7 +801,7 @@
         </div>
         <div class="model-chip">
           <span>Zero-Shot 音色克隆</span>
-          <strong>CosyVoice 2</strong>
+          <strong>CosyVoice 3.0</strong>
         </div>
         <div class="model-chip">
           <span>数字人</span>
@@ -804,13 +813,15 @@
     <main class="workspace">
       <header class="topbar" id="practiceSection">
         <div class="title-group">
-          <h1 id="lessonTitle">菜场生存 · 第 02 关</h1>
+          <h1 id="lessonTitle">菜场生存 · 第 01 关</h1>
           <p id="lessonSubtitle">用真实母语者音频完成询价、称重与还价三个交际动作。</p>
+          <p class="native-status" id="nativeHint">母语者示范音频待上传</p>
         </div>
         <div class="toolbar">
-          <button class="btn secondary" id="playNative"><span class="icon">▶</span>母语者示范</button>
+          <button class="btn secondary" id="playNative"><span class="icon">▶</span><span id="nativeButtonText">示范待上传</span></button>
           <button class="btn teal" id="nextTask"><span class="icon">↻</span>换一个任务</button>
         </div>
+        <audio id="nativePlayer" controls hidden></audio>
       </header>
 
       <section class="dashboard">
@@ -834,8 +845,8 @@
                   <p class="translation" id="mandarinLine">普通话：姐姐，这个番茄怎么卖？帮我称两斤。</p>
                   <div class="phrase-row">
                     <div>
-                      <strong id="targetChunk">点卖呀</strong>
-                      <span id="chunkNote">核心语块：询价时语气要上扬，尾音收得轻一点。</span>
+                      <strong id="targetChunk">点卖呀？</strong>
+                      <span id="chunkNote">意思是“怎么卖/多少钱”。粤语里“点”接近“怎么”，“点卖呀？”就是买菜询价。</span>
                     </div>
                     <div class="wave" aria-hidden="true">
                       <i></i><i></i><i></i><i></i><i></i><i></i>
@@ -843,8 +854,8 @@
                   </div>
                   <div class="phrase-row">
                     <div>
-                      <strong id="missionTitle">信息差任务</strong>
-                      <span id="missionText">摊主只说了单价，没有主动问重量。你需要补全“称两斤”的请求。</span>
+                      <strong id="missionTitle">补全成交请求</strong>
+                      <span id="missionText">场景假设：摊主只报了单价，还没问你要多少。你要用方言补上“帮我称两斤”，完成一次买菜对话。</span>
                     </div>
                     <button class="btn secondary" id="showHint"><span class="icon">?</span>提示</button>
                   </div>
@@ -899,7 +910,7 @@
               <div class="matrix-item">
                 <em>3</em>
                 <strong>镜像赋能</strong>
-                <p>评测后生成带有用户音色特征的标准示范，强化自我效能感。</p>
+                <p>评测后生成带有用户音色特征的镜像跟读，标准发音以母语者示范为准。</p>
               </div>
               <div class="matrix-item">
                 <em>4</em>
@@ -939,7 +950,7 @@
                 </div>
                 <div class="score-copy">
                   <strong id="scoreTitle">连读自然度不错</strong>
-                  <p id="scoreAdvice">“点卖呀”的尾音略重，建议把最后一个音节放轻，并把“番茄点卖”连成一个气口。</p>
+                  <p id="scoreAdvice">“点卖呀？”的尾音略重，建议把最后一个音节放轻，并把“番茄点卖”连成一个气口。</p>
                 </div>
               </div>
               <div class="metric-list">
@@ -953,14 +964,14 @@
 
           <section class="panel" id="voiceCloneSection">
             <div class="panel-header">
-              <h3>CosyVoice 2 镜像示范</h3>
+              <h3>CosyVoice 3 镜像示范（实验）</h3>
               <span id="cloneStatus">可生成</span>
             </div>
             <div class="clone-panel">
               <div class="clone-status">
                 <div>
-                  <strong id="cloneTitle">用户音色标准示范</strong>
-                  <span id="cloneText">评测完成后生成同一句标准方言音频。</span>
+                  <strong id="cloneTitle">用户音色镜像跟读</strong>
+                  <span id="cloneText">评测完成后生成同一句用户音色镜像音频；标准发音以母语者示范为准。</span>
                 </div>
                 <button class="btn secondary" id="cloneBtn"><span class="icon">◇</span>生成</button>
               </div>
@@ -978,17 +989,18 @@
     const lessonBank = {
       yue: {
         market: {
-          title: "菜场生存 · 第 02 关",
+          title: "菜场生存 · 第 01 关",
           subtitle: "用粤语完成询价、称重与还价三个交际动作。",
           prompt: "阿姐，呢个番茄点卖呀？帮我称两斤。",
           mandarin: "普通话：姐姐，这个番茄怎么卖？帮我称两斤。",
-          chunk: "点卖呀",
-          note: "核心语块：询价时语气要上扬，尾音收得轻一点。",
-          mission: "摊主只说了单价，没有主动问重量。你需要补全“称两斤”的请求。",
+          chunk: "点卖呀？",
+          note: "意思是“怎么卖/多少钱”。粤语里“点”接近“怎么”，“点卖呀？”就是买菜询价。",
+          missionTitle: "补全成交请求",
+          mission: "场景假设：摊主只报了单价，还没问你要多少。你要用方言补上“帮我称两斤”，完成一次买菜对话。",
           coach: "先跟读核心语块，再把整句话连起来。"
         },
         family: {
-          title: "亲戚社交 · 第 01 关",
+          title: "亲戚社交 · 第 02 关",
           subtitle: "用粤语在家宴中完成称呼、问候和礼貌回应。",
           prompt: "姑妈，好耐冇见，最近身子点呀？",
           mandarin: "普通话：姑妈，好久不见，最近身体怎么样？",
@@ -1010,7 +1022,7 @@
       },
       wu: {
         market: {
-          title: "菜场生存 · 第 02 关",
+          title: "菜场生存 · 第 01 关",
           subtitle: "用吴语完成询价、称重与还价三个交际动作。",
           prompt: "阿姐，搿个番茄几钿一斤？帮我称两斤。",
           mandarin: "普通话：姐姐，这个番茄多少钱一斤？帮我称两斤。",
@@ -1020,7 +1032,7 @@
           coach: "先抓住“搿个”和“几钿”的口型，再把整句顺下来。"
         },
         family: {
-          title: "亲戚社交 · 第 01 关",
+          title: "亲戚社交 · 第 02 关",
           subtitle: "用吴语在家宴中完成称呼、问候和礼貌回应。",
           prompt: "阿姨，好久勿见，近来身体好伐？",
           mandarin: "普通话：阿姨，好久不见，最近身体好吗？",
@@ -1042,7 +1054,7 @@
       },
       minnan: {
         market: {
-          title: "菜场生存 · 第 02 关",
+          title: "菜场生存 · 第 01 关",
           subtitle: "用闽南语完成询价、称重与还价三个交际动作。",
           prompt: "阿姊，遮个番茄按怎卖？帮我秤两斤。",
           mandarin: "普通话：姐姐，这个番茄怎么卖？帮我称两斤。",
@@ -1052,7 +1064,7 @@
           coach: "先练“按怎卖”的连读，再把前后语块接起来。"
         },
         family: {
-          title: "亲戚社交 · 第 01 关",
+          title: "亲戚社交 · 第 02 关",
           subtitle: "用闽南语在家宴中完成称呼、问候和礼貌回应。",
           prompt: "阿姑，真久无看着，最近身体敢好？",
           mandarin: "普通话：姑姑，很久没见，最近身体还好吗？",
@@ -1074,7 +1086,7 @@
       },
       southwest: {
         market: {
-          title: "菜场生存 · 第 02 关",
+          title: "菜场生存 · 第 01 关",
           subtitle: "用西南官话完成询价、称重与还价三个交际动作。",
           prompt: "嬢嬢，这个番茄好多钱一斤嘛？帮我称两斤。",
           mandarin: "普通话：阿姨，这个番茄多少钱一斤？帮我称两斤。",
@@ -1084,7 +1096,7 @@
           coach: "这句重点是生活感，不要读成播音腔。"
         },
         family: {
-          title: "亲戚社交 · 第 01 关",
+          title: "亲戚社交 · 第 02 关",
           subtitle: "用西南官话在家宴中完成称呼、问候和礼貌回应。",
           prompt: "嬢嬢，好久没看到你了，最近身体还可以噻？",
           mandarin: "普通话：阿姨，好久没见到你了，最近身体还可以吧？",
@@ -1150,8 +1162,17 @@
       $("scoreTitle").textContent = "等待开口练习";
       $("scoreAdvice").textContent = `当前目标语块是“${lesson.chunk}”。录音后会用 SenseVoice-Small 给出声母、韵母、声调和连读建议。`;
       $("cloneStatus").textContent = "可生成";
-      $("cloneTitle").textContent = "用户音色标准示范";
-      $("cloneText").textContent = `评测完成后生成“${lesson.chunk}”相关的用户音色标准示范。`;
+      $("cloneTitle").textContent = "用户音色镜像跟读";
+      $("cloneText").textContent = `评测完成后可生成“${lesson.chunk}”相关的同音色跟读音频；标准发音以母语者示范为准。`;
+    }
+
+    function updateNativeDemoState(lesson) {
+      const hasNativeAudio = Boolean(lesson.nativeAudio);
+      $("nativeButtonText").textContent = hasNativeAudio ? "母语者示范" : "示范待上传";
+      $("nativeHint").textContent = hasNativeAudio ? "可播放本关母语者示范音频" : "母语者示范音频待上传";
+      $("nativeHint").classList.toggle("ready", hasNativeAudio);
+      $("nativePlayer").hidden = !hasNativeAudio;
+      if (!hasNativeAudio) $("nativePlayer").removeAttribute("src");
     }
 
     function setScene(scene) {
@@ -1163,9 +1184,11 @@
       $("mandarinLine").textContent = lesson.mandarin;
       $("targetChunk").textContent = lesson.chunk;
       $("chunkNote").textContent = lesson.note;
+      $("missionTitle").textContent = lesson.missionTitle || "交际任务";
       $("missionText").textContent = lesson.mission;
       $("coachLine").textContent = lesson.coach;
       resetAssessmentCopy(lesson);
+      updateNativeDemoState(lesson);
       document.querySelectorAll(".scenario").forEach((button) => {
         button.classList.toggle("active", button.dataset.scene === scene);
       });
@@ -1353,8 +1376,10 @@
     async function clonePreview() {
       $("cloneStatus").textContent = "生成中";
       const form = new FormData();
+      const lesson = getLesson();
       form.append("dialect", state.dialect);
       form.append("scene", state.scene);
+      form.append("prompt_text", lesson.prompt);
       if (state.audioBlob) {
         const speakerName = state.audioFileName ? state.audioFileName.replace("practice", "speaker") : "speaker.wav";
         form.append("speaker_audio", state.audioBlob, speakerName);
@@ -1368,13 +1393,37 @@
         if (result.audio_url) {
           $("clonePlayer").src = result.audio_url;
           $("clonePlayer").hidden = false;
+        } else {
+          $("clonePlayer").removeAttribute("src");
+          $("clonePlayer").hidden = true;
         }
-        $("cloneStatus").textContent = "已生成";
+        const statusText = {
+          generated: "已生成",
+          voice_too_short: "需重录",
+          audio_read_failed: "需重录",
+          model_env_error: "环境异常",
+          mock_ready: "本地模拟",
+        };
+        $("cloneStatus").textContent = statusText[result.status] || "已返回";
       } catch (error) {
-        $("cloneTitle").textContent = "已生成模拟示范";
-        $("cloneText").textContent = `后端接入 CosyVoice 3.0 后，这里会返回${getDialectLabel()}的用户音色标准示范。`;
+        $("cloneTitle").textContent = "已生成模拟镜像";
+        $("cloneText").textContent = `后端接入 CosyVoice 3.0 后，这里会返回${getDialectLabel()}的用户音色镜像跟读；标准发音仍以母语者示范为准。`;
         $("cloneStatus").textContent = "本地模拟";
       }
+    }
+
+    function playNativeDemo() {
+      const lesson = getLesson();
+      if (!lesson.nativeAudio) {
+        const message = "当前关卡还没有上传母语者示范音频。SenseVoice-Small 负责识别与评价，CosyVoice 3.0 负责音色镜像；标准示范需要后续采集本土母语者录音后接入。";
+        $("nativeHint").textContent = message;
+        $("recordHint").textContent = message;
+        return;
+      }
+      $("nativePlayer").src = lesson.nativeAudio;
+      $("nativePlayer").hidden = false;
+      $("nativePlayer").play();
+      $("nativeHint").textContent = "正在播放母语者示范音频";
     }
 
     function setActiveNav(targetId) {
@@ -1414,9 +1463,7 @@
     $("showHint").addEventListener("click", () => {
       $("coachLine").textContent = getLesson().note;
     });
-    $("playNative").addEventListener("click", () => {
-      $("recordHint").textContent = `${getDialectLabel()}示范音频位已触发；接入母语者素材库后会播放当前句。`;
-    });
+    $("playNative").addEventListener("click", playNativeDemo);
 
     setScene("market");
     setStage("discover");

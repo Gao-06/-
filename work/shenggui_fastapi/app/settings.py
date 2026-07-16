@@ -9,6 +9,27 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BASE_DIR.parent
 STATIC_DIR = PROJECT_DIR / "static"
 GENERATED_AUDIO_DIR = STATIC_DIR / "generated"
+DEFAULT_RUNTIME_DIR = Path(r"D:\shenggui\ShengguiRuntime")
+RUNTIME_DIR = Path(os.getenv("SHENGGUI_RUNTIME_DIR", str(DEFAULT_RUNTIME_DIR)))
+CACHE_DIR = Path(os.getenv("SHENGGUI_CACHE_DIR", str(RUNTIME_DIR / "model-cache")))
+RUNTIME_TMP_DIR = RUNTIME_DIR / "tmp"
+RUNTIME_AUDIO_DIR = RUNTIME_DIR / "audio"
+
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+(CACHE_DIR / "huggingface").mkdir(parents=True, exist_ok=True)
+(CACHE_DIR / "matplotlib").mkdir(parents=True, exist_ok=True)
+(CACHE_DIR / "numba").mkdir(parents=True, exist_ok=True)
+(CACHE_DIR / "torch").mkdir(parents=True, exist_ok=True)
+RUNTIME_TMP_DIR.mkdir(parents=True, exist_ok=True)
+RUNTIME_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("HF_HOME", str(CACHE_DIR / "huggingface"))
+os.environ.setdefault("HF_HUB_CACHE", str(CACHE_DIR / "huggingface" / "hub"))
+os.environ.setdefault("MPLCONFIGDIR", str(CACHE_DIR / "matplotlib"))
+os.environ.setdefault("TORCH_HOME", str(CACHE_DIR / "torch"))
+os.environ["NUMBA_CACHE_DIR"] = str(CACHE_DIR / "numba")
+os.environ["TEMP"] = str(RUNTIME_TMP_DIR)
+os.environ["TMP"] = str(RUNTIME_TMP_DIR)
+os.environ["TMPDIR"] = str(RUNTIME_TMP_DIR)
 
 DEFAULT_SENSEVOICE_ENGINE_DIR = Path(r"D:\shenggui\SenseVoice")
 DEFAULT_SENSEVOICE_PUBLIC_DIR = Path(r"D:\shenggui\SenseVoicePublic")
@@ -73,6 +94,7 @@ class Settings:
         "SHENGGUI_COSYVOICE_MODEL_DIR",
         str(DEFAULT_COSYVOICE_MODEL_DIR),
     )
+    cosyvoice_audio_dir: Path = RUNTIME_AUDIO_DIR
     generated_audio_dir: Path = GENERATED_AUDIO_DIR
 
     @property

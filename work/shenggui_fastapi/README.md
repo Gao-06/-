@@ -56,4 +56,5 @@ $env:SHENGGUI_SENSEVOICE_VAD_GGUF="D:\shenggui\SenseVoicePublic\funasr-gguf\fsmn
 
 ## 近期更新
 
+- [2026-07-16 双模型接通与音色克隆错误提示更新](docs/update-2026-07-16-models-and-errors.md)
 - [2026-07-16 本地模型启动与 CosyVoice 依赖检查更新](docs/update-2026-07-16.md)
