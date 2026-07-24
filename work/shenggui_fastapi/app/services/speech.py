@@ -5,7 +5,7 @@ import logging
 import wave
 from dataclasses import dataclass
 
-from ..settings import settings
+from ..settings import VoiceCloneProfile, settings
 from .library import DIALECT_LIBRARY, get_scene_data
 from .model_adapters import (
     CosyVoiceAdapter,
@@ -157,14 +157,57 @@ class SpeechAssessmentService:
 
 @dataclass(frozen=True)
 class VoiceCloneService:
-    model_name: str = "CosyVoice 3.0"
+    model_name: str = "CosyVoice2 方言微调"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_adapter", CosyVoiceAdapter(settings))
 
     @property
     def model_ready(self) -> bool:
-        return bool(settings.use_local_models and self._adapter.ready)
+        return bool(settings.use_local_models and self._adapter.has_any_profile_available())
+
+    def profile_status(self, dialect: str) -> dict[str, object]:
+        return self._adapter.profile_status(dialect)
+
+    def all_profile_statuses(self) -> dict[str, dict[str, object]]:
+        return {
+            dialect: self.profile_status(dialect)
+            for dialect in settings.voice_clone_profiles()
+        }
+
+    def _build_response(
+        self,
+        *,
+        profile: VoiceCloneProfile,
+        profile_info: dict[str, object],
+        dialect: str,
+        scene_data: dict[str, str],
+        prompt: str,
+        status: str,
+        title: str,
+        message: str,
+        audio_url: str | None = None,
+        duration_seconds: float | None = None,
+        extra: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "model": profile.display_name,
+            "model_ready": bool(settings.use_local_models and profile_info.get("ready")),
+            "backend": settings.model_backend,
+            "dialect": dialect,
+            "status": status,
+            "title": title,
+            "message": message,
+            "audio_url": audio_url,
+            "target_text": scene_data["target_text"],
+            "prompt_text": prompt,
+            "voice_model": profile_info,
+        }
+        if duration_seconds is not None:
+            payload["duration_seconds"] = round(duration_seconds, 2)
+        if extra:
+            payload.update(extra)
+        return payload
 
     def create_preview(
         self,
@@ -175,6 +218,8 @@ class VoiceCloneService:
         prompt_text: str | None = None,
     ) -> dict[str, object]:
         scene_data = get_scene_data(dialect=dialect, scene=scene)
+        profile = settings.voice_clone_profile(dialect)
+        profile_info = self.profile_status(dialect)
         has_voice = len(speaker_audio) > 0
         prompt = prompt_text or scene_data["target_text"]
         duration_seconds = _wav_duration_seconds(speaker_audio) if has_voice else None
@@ -182,6 +227,8 @@ class VoiceCloneService:
         if settings.use_local_models and has_voice:
             if duration_seconds is not None and duration_seconds < MIN_VOICE_CLONE_SECONDS:
                 return self._short_audio_response(
+                    profile=profile,
+                    profile_info=profile_info,
                     dialect=dialect,
                     scene_data=scene_data,
                     prompt=prompt,
@@ -190,28 +237,31 @@ class VoiceCloneService:
 
             try:
                 audio_url = self._adapter.synthesize_zero_shot(
+                    profile=profile,
                     target_text=scene_data["target_text"],
                     prompt_text=prompt,
                     speaker_audio=speaker_audio,
                     filename=filename,
                 )
-                return {
-                    "model": self.model_name,
-                    "model_ready": self.model_ready,
-                    "backend": settings.model_backend,
-                    "dialect": dialect,
-                    "status": "generated",
-                    "title": "用户音色镜像跟读（实验）",
-                    "message": f"已生成“{scene_data['name']}”的用户音色镜像音频；当前效果仅供跟读参考，标准发音以母语者示范为准。",
-                    "audio_url": audio_url,
-                    "target_text": scene_data["target_text"],
-                    "prompt_text": prompt,
-                }
+                profile_info = self.profile_status(dialect)
+                return self._build_response(
+                    profile=profile,
+                    profile_info=profile_info,
+                    dialect=dialect,
+                    scene_data=scene_data,
+                    prompt=prompt,
+                    status="generated",
+                    title=f"用户音色镜像跟读（{profile.display_name}）",
+                    message=f"已调用{profile.display_name}为“{scene_data['name']}”生成同音色示范音频；标准发音以母语者示范为准。",
+                    audio_url=audio_url,
+                )
             except Exception as exc:
                 error = str(exc)
                 logger.exception("CosyVoice zero-shot synthesis failed")
                 if _looks_like_short_audio_error(error):
                     return self._short_audio_response(
+                        profile=profile,
+                        profile_info=profile_info,
                         dialect=dialect,
                         scene_data=scene_data,
                         prompt=prompt,
@@ -219,6 +269,8 @@ class VoiceCloneService:
                     )
                 if _looks_like_audio_io_error(error):
                     return self._audio_io_error_response(
+                        profile=profile,
+                        profile_info=profile_info,
                         dialect=dialect,
                         scene_data=scene_data,
                         prompt=prompt,
@@ -226,6 +278,8 @@ class VoiceCloneService:
                     )
                 if _looks_like_model_env_error(error):
                     return self._model_env_error_response(
+                        profile=profile,
+                        profile_info=profile_info,
                         dialect=dialect,
                         scene_data=scene_data,
                         prompt=prompt,
@@ -233,6 +287,8 @@ class VoiceCloneService:
                 if not settings.model_fallback_to_mock:
                     raise
                 return self._mock_response(
+                    profile=profile,
+                    profile_info=profile_info,
                     dialect=dialect,
                     scene_data=scene_data,
                     has_voice=has_voice,
@@ -241,6 +297,8 @@ class VoiceCloneService:
                 )
 
         return self._mock_response(
+            profile=profile,
+            profile_info=profile_info,
             dialect=dialect,
             scene_data=scene_data,
             has_voice=has_voice,
@@ -250,95 +308,99 @@ class VoiceCloneService:
     def _short_audio_response(
         self,
         *,
+        profile: VoiceCloneProfile,
+        profile_info: dict[str, object],
         dialect: str,
         scene_data: dict[str, str],
         prompt: str,
         duration_seconds: float | None,
     ) -> dict[str, object]:
-        return {
-            "model": self.model_name,
-            "model_ready": self.model_ready,
-            "backend": settings.model_backend,
-            "dialect": dialect,
-            "status": "voice_too_short",
-            "title": "说话时间太短了",
-            "message": "说话时间太短了，无法生成，请至少说 10 秒，并尽量保持连续、清晰的自然语音。",
-            "audio_url": None,
-            "target_text": scene_data["target_text"],
-            "prompt_text": prompt,
-            "min_duration_seconds": MIN_VOICE_CLONE_SECONDS,
-            "duration_seconds": round(duration_seconds, 2) if duration_seconds is not None else None,
-        }
+        return self._build_response(
+            profile=profile,
+            profile_info=profile_info,
+            dialect=dialect,
+            scene_data=scene_data,
+            prompt=prompt,
+            status="voice_too_short",
+            title="说话时间太短了",
+            message="说话时间太短了，无法生成，请至少说 10 秒。",
+            audio_url=None,
+            duration_seconds=duration_seconds,
+            extra={"min_duration_seconds": MIN_VOICE_CLONE_SECONDS},
+        )
 
     def _model_env_error_response(
         self,
         *,
+        profile: VoiceCloneProfile,
+        profile_info: dict[str, object],
         dialect: str,
         scene_data: dict[str, str],
         prompt: str,
     ) -> dict[str, object]:
-        return {
-            "model": self.model_name,
-            "model_ready": False,
-            "backend": settings.model_backend,
-            "dialect": dialect,
-            "status": "model_env_error",
-            "title": "本地音色模型环境异常",
-            "message": "CosyVoice 3.0 权重已找到，但模型加载环境不匹配。请确认使用 CosyVoice 专用 Python 环境启动后端。",
-            "audio_url": None,
-            "target_text": scene_data["target_text"],
-            "prompt_text": prompt,
-        }
+        return self._build_response(
+            profile=profile,
+            profile_info=profile_info,
+            dialect=dialect,
+            scene_data=scene_data,
+            prompt=prompt,
+            status="model_env_error",
+            title="本地音色模型环境异常",
+            message=f"{profile.display_name} 权重已找到，但模型加载环境不匹配。请确认使用 CosyVoice 专用 Python 环境启动后端。",
+            audio_url=None,
+        )
 
     def _audio_io_error_response(
         self,
         *,
+        profile: VoiceCloneProfile,
+        profile_info: dict[str, object],
         dialect: str,
         scene_data: dict[str, str],
         prompt: str,
         duration_seconds: float | None,
     ) -> dict[str, object]:
-        return {
-            "model": self.model_name,
-            "model_ready": self.model_ready,
-            "backend": settings.model_backend,
-            "dialect": dialect,
-            "status": "audio_read_failed",
-            "title": "录音文件读取失败",
-            "message": "后端读取录音文件失败。请重新录制一段 10 秒以上、连续清晰的语音后再生成。",
-            "audio_url": None,
-            "target_text": scene_data["target_text"],
-            "prompt_text": prompt,
-            "duration_seconds": round(duration_seconds, 2) if duration_seconds is not None else None,
-        }
+        return self._build_response(
+            profile=profile,
+            profile_info=profile_info,
+            dialect=dialect,
+            scene_data=scene_data,
+            prompt=prompt,
+            status="audio_read_failed",
+            title="录音文件读取失败",
+            message="后端读取录音文件失败。请重新录制一段 10 秒以上、连续清晰的语音后再生成。",
+            audio_url=None,
+            duration_seconds=duration_seconds,
+        )
 
     def _mock_response(
         self,
         *,
+        profile: VoiceCloneProfile,
+        profile_info: dict[str, object],
         dialect: str,
         scene_data: dict[str, str],
         has_voice: bool,
         prompt: str,
         error: str | None = None,
     ) -> dict[str, object]:
-        title = "用户音色镜像跟读（实验）" if has_voice else "等待用户音色样本"
+        title = "用户音色镜像跟读（模拟）" if has_voice else "等待用户音色样本"
         message = (
-            f"已为“{scene_data['name']}”生成模拟任务。接入 CosyVoice 3.0 后返回用户音色镜像跟读；标准发音以母语者示范为准。"
+            f"已为“{scene_data['name']}”生成模拟任务。接入 {profile.display_name} 后返回用户音色镜像跟读；标准发音以母语者示范为准。"
             if has_voice
-            else "当前没有收到音色样本；真实服务会要求一段用户参考音频。"
+            else f"当前没有收到音色样本；真实服务会调用 {profile.display_name} 生成同音色镜像。"
         )
         if error:
             title = "本地音色模型加载失败，已回退模拟结果"
-            message = f"后端尝试调用 CosyVoice 3.0 时出错：{error}"
-        return {
-            "model": self.model_name,
-            "model_ready": False,
-            "backend": settings.model_backend,
-            "dialect": dialect,
-            "status": "mock_ready",
-            "title": title,
-            "message": message,
-            "audio_url": None,
-            "target_text": scene_data["target_text"],
-            "prompt_text": prompt,
-        }
+            message = f"后端尝试调用 {profile.display_name} 时出错：{error}"
+        return self._build_response(
+            profile=profile,
+            profile_info=profile_info,
+            dialect=dialect,
+            scene_data=scene_data,
+            prompt=prompt,
+            status="mock_ready",
+            title=title,
+            message=message,
+            audio_url=None,
+        )

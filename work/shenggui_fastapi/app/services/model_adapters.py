@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import re
 import shutil
 import subprocess
@@ -11,13 +12,12 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
-from ..settings import Settings
+from ..settings import Settings, VoiceCloneProfile
 
 
 DIALECT_TO_SENSEVOICE_LANGUAGE = {
     "yue": "yue",
     "wu": "zh",
-    "minnan": "zh",
     "southwest": "zh",
 }
 
@@ -243,21 +243,45 @@ class CosyVoiceAdapter:
         self.settings = settings
         self._model: Any | None = None
         self._torchaudio: Any | None = None
+        self._active_profile_key: str | None = None
 
     @property
     def ready(self) -> bool:
         return self._model is not None
 
-    def _load(self) -> None:
-        if self._model is not None:
+    def has_any_profile_available(self) -> bool:
+        return any(profile.ready for profile in self.settings.voice_clone_profiles().values())
+
+    def profile_status(self, dialect: str) -> dict[str, object]:
+        profile = self.settings.voice_clone_profile(dialect)
+        status = profile.as_dict()
+        status["loaded"] = self._active_profile_key == self._profile_key(profile)
+        return status
+
+    def _profile_key(self, profile: VoiceCloneProfile) -> str:
+        return str(Path(profile.model_dir).resolve())
+
+    def _unload(self) -> None:
+        self._model = None
+        self._torchaudio = None
+        self._active_profile_key = None
+        gc.collect()
+
+    def _load(self, profile: VoiceCloneProfile) -> None:
+        profile_key = self._profile_key(profile)
+        if self._model is not None and self._active_profile_key == profile_key:
             return
 
-        model_dir = Path(self.settings.cosyvoice_model_dir)
+        if self._model is not None and self._active_profile_key != profile_key:
+            self._unload()
+
+        model_dir = Path(profile.model_dir)
         if not model_dir.exists():
             raise RuntimeError(f"CosyVoice model dir not found: {model_dir}")
 
-        if self.settings.cosyvoice_repo:
-            repo_path = Path(self.settings.cosyvoice_repo).resolve()
+        repo_value = profile.repo or self.settings.cosyvoice_repo
+        if repo_value:
+            repo_path = Path(repo_value).resolve()
             if not repo_path.exists():
                 raise RuntimeError(f"CosyVoice repo not found: {repo_path}")
             matcha_path = repo_path / "third_party" / "Matcha-TTS"
@@ -282,10 +306,12 @@ class CosyVoiceAdapter:
 
         self._model = AutoModel(model_dir=str(model_dir))
         self._torchaudio = torchaudio
+        self._active_profile_key = profile_key
 
     def synthesize_zero_shot(
         self,
         *,
+        profile: VoiceCloneProfile,
         target_text: str,
         prompt_text: str,
         speaker_audio: bytes,
@@ -294,7 +320,7 @@ class CosyVoiceAdapter:
         if not speaker_audio:
             return None
 
-        self._load()
+        self._load(profile)
         assert self._model is not None
         assert self._torchaudio is not None
 
@@ -310,7 +336,7 @@ class CosyVoiceAdapter:
         public_output_path = self.settings.generated_audio_dir / output_name
         inference_prompt_text = (
             _format_cosyvoice3_prompt(prompt_text)
-            if (Path(self.settings.cosyvoice_model_dir) / "cosyvoice3.yaml").exists()
+            if (Path(profile.model_dir) / "cosyvoice3.yaml").exists()
             else prompt_text
         )
 

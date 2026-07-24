@@ -38,7 +38,7 @@ Write-Host "Starting Shenggui FastAPI in LOCAL mode..." -ForegroundColor Cyan
 Write-Host "Python: $python" -ForegroundColor Cyan
 Write-Host "Runtime: $runtimeRoot" -ForegroundColor Cyan
 Write-Host "SenseVoice: expects GGUF files under D:\shenggui\SenseVoicePublic." -ForegroundColor Yellow
-Write-Host "CosyVoice 3.0: expects repo, weights, dependencies, and third_party\Matcha-TTS." -ForegroundColor Yellow
+Write-Host "CosyVoice2 dialect models: expects Yue/Wu/Chuan weights plus repo dependencies and third_party\Matcha-TTS." -ForegroundColor Yellow
 Write-Host "Open: http://127.0.0.1:$Port" -ForegroundColor Green
 
 & $python -m uvicorn app.main:app --host 127.0.0.1 --port $Port

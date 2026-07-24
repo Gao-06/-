@@ -36,23 +36,6 @@ DIALECT_LIBRARY: dict[str, dict[str, dict[str, str]]] = {
             "focus": "委婉拒绝、确认边界、快速复述",
         },
     },
-    "minnan": {
-        "market": {
-            "name": "菜场生存",
-            "target_text": "阿姊，遮个番茄按怎卖？帮我秤两斤。",
-            "focus": "询价、称重、还价、寒暄收尾",
-        },
-        "family": {
-            "name": "亲戚社交",
-            "target_text": "阿姑，真久无看着，最近身体敢好？",
-            "focus": "称呼、问候、回应关心、礼貌转移",
-        },
-        "office": {
-            "name": "职场防御",
-            "target_text": "这件代志我今暗未必赶会切，我先佮你确认重点。",
-            "focus": "委婉拒绝、确认边界、快速复述",
-        },
-    },
     "southwest": {
         "market": {
             "name": "菜场生存",

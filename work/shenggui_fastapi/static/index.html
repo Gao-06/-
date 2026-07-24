@@ -782,7 +782,6 @@
         <select class="select" id="dialect">
           <option value="yue">粤语 · 广府片</option>
           <option value="wu">吴语 · 苏沪嘉小片</option>
-          <option value="minnan">闽南语 · 泉漳片</option>
           <option value="southwest">西南官话 · 成渝片</option>
         </select>
       </div>
@@ -801,7 +800,7 @@
         </div>
         <div class="model-chip">
           <span>Zero-Shot 音色克隆</span>
-          <strong>CosyVoice 3.0</strong>
+          <strong>CosyVoice2 方言微调</strong>
         </div>
         <div class="model-chip">
           <span>数字人</span>
@@ -964,7 +963,7 @@
 
           <section class="panel" id="voiceCloneSection">
             <div class="panel-header">
-              <h3>CosyVoice 3 镜像示范（实验）</h3>
+              <h3>CosyVoice2 方言镜像示范</h3>
               <span id="cloneStatus">可生成</span>
             </div>
             <div class="clone-panel">
@@ -1052,38 +1051,6 @@
           coach: "先把“未必”说清楚，再用后半句降低对抗感。"
         }
       },
-      minnan: {
-        market: {
-          title: "菜场生存 · 第 01 关",
-          subtitle: "用闽南语完成询价、称重与还价三个交际动作。",
-          prompt: "阿姊，遮个番茄按怎卖？帮我秤两斤。",
-          mandarin: "普通话：姐姐，这个番茄怎么卖？帮我称两斤。",
-          chunk: "按怎卖",
-          note: "核心语块：“按怎”要连读，后面的“卖”轻轻抬起。",
-          mission: "摊主等你开口确认买法。你需要先问价格，再说清楚重量。",
-          coach: "先练“按怎卖”的连读，再把前后语块接起来。"
-        },
-        family: {
-          title: "亲戚社交 · 第 02 关",
-          subtitle: "用闽南语在家宴中完成称呼、问候和礼貌回应。",
-          prompt: "阿姑，真久无看着，最近身体敢好？",
-          mandarin: "普通话：姑姑，很久没见，最近身体还好吗？",
-          chunk: "敢好",
-          note: "核心语块：问候时语气要放软，像关心而不是检查。",
-          mission: "亲戚问你最近忙不忙。你需要先回答，再礼貌反问身体情况。",
-          coach: "这句要有熟人之间的温度，语速不宜太快。"
-        },
-        office: {
-          title: "职场防御 · 第 03 关",
-          subtitle: "用闽南语完成委婉拒绝、确认边界与复述。",
-          prompt: "这件代志我今暗未必赶会切，我先佮你确认重点。",
-          mandarin: "普通话：这件事情我今晚未必赶得及，我先和你确认重点。",
-          chunk: "未必赶会切",
-          note: "核心语块：把“未必”说稳，再用“确认重点”表达愿意协作。",
-          mission: "对方只强调很急。你需要说明今晚风险，并确认最重要的交付项。",
-          coach: "边界要说得清楚，但后半句要保持合作语气。"
-        }
-      },
       southwest: {
         market: {
           title: "菜场生存 · 第 01 关",
@@ -1133,6 +1100,21 @@
       }
     };
 
+    const voiceModelBank = {
+      yue: {
+        name: "粤语专用 CosyVoice2",
+        note: "当前会调用粤语微调模型生成同音色跟读。"
+      },
+      wu: {
+        name: "吴语专用 CosyVoice2",
+        note: "当前会调用吴语微调模型生成同音色跟读。"
+      },
+      southwest: {
+        name: "西南官话专用 CosyVoice2",
+        note: "当前会调用川渝微调模型生成同音色跟读。"
+      }
+    };
+
     const state = {
       dialect: "yue",
       scene: "market",
@@ -1157,13 +1139,18 @@
       return selected ? selected.textContent : "当前方言";
     }
 
+    function getVoiceModel() {
+      return voiceModelBank[state.dialect] || voiceModelBank.yue;
+    }
+
     function resetAssessmentCopy(lesson) {
+      const voiceModel = getVoiceModel();
       $("evalStatus").textContent = "等待录音";
       $("scoreTitle").textContent = "等待开口练习";
       $("scoreAdvice").textContent = `当前目标语块是“${lesson.chunk}”。录音后会用 SenseVoice-Small 给出声母、韵母、声调和连读建议。`;
       $("cloneStatus").textContent = "可生成";
       $("cloneTitle").textContent = "用户音色镜像跟读";
-      $("cloneText").textContent = `评测完成后可生成“${lesson.chunk}”相关的同音色跟读音频；标准发音以母语者示范为准。`;
+      $("cloneText").textContent = `评测完成后可调用${voiceModel.name}生成“${lesson.chunk}”相关的同音色跟读音频；标准发音以母语者示范为准。`;
     }
 
     function updateNativeDemoState(lesson) {
@@ -1197,7 +1184,7 @@
     function setDialect(dialect) {
       state.dialect = dialect;
       setScene(state.scene);
-      $("recordHint").textContent = `已切换到${getDialectLabel()}，可以录制当前句进行评测。`;
+      $("recordHint").textContent = `已切换到${getDialectLabel()}，镜像音色将使用${getVoiceModel().name}。`;
     }
 
     function setStage(stage) {
@@ -1406,8 +1393,9 @@
         };
         $("cloneStatus").textContent = statusText[result.status] || "已返回";
       } catch (error) {
+        const voiceModel = getVoiceModel();
         $("cloneTitle").textContent = "已生成模拟镜像";
-        $("cloneText").textContent = `后端接入 CosyVoice 3.0 后，这里会返回${getDialectLabel()}的用户音色镜像跟读；标准发音仍以母语者示范为准。`;
+        $("cloneText").textContent = `后端接入${voiceModel.name}后，这里会返回${getDialectLabel()}的用户音色镜像跟读；标准发音仍以母语者示范为准。`;
         $("cloneStatus").textContent = "本地模拟";
       }
     }
@@ -1415,7 +1403,7 @@
     function playNativeDemo() {
       const lesson = getLesson();
       if (!lesson.nativeAudio) {
-        const message = "当前关卡还没有上传母语者示范音频。SenseVoice-Small 负责识别与评价，CosyVoice 3.0 负责音色镜像；标准示范需要后续采集本土母语者录音后接入。";
+        const message = `当前关卡还没有上传母语者示范音频。SenseVoice-Small 负责识别与评价，${getVoiceModel().name} 负责音色镜像；标准示范需要后续采集本土母语者录音后接入。`;
         $("nativeHint").textContent = message;
         $("recordHint").textContent = message;
         return;

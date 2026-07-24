@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,7 +17,7 @@ PROJECT_DIR = BASE_DIR.parent
 
 app = FastAPI(
     title="声归 Shenggui API",
-    description="Dialect learning MVP API for SenseVoice-Small assessment and CosyVoice 3.0 voice cloning.",
+    description="Dialect learning MVP API for SenseVoice-Small assessment and dialect-specific CosyVoice2 voice cloning.",
     version="0.1.0",
 )
 
@@ -33,6 +33,11 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 assessment_service = SpeechAssessmentService()
 voice_clone_service = VoiceCloneService()
+
+
+def _require_supported_dialect(dialect: str) -> None:
+    if dialect not in DIALECT_LIBRARY:
+        raise HTTPException(status_code=400, detail=f"暂不支持该方言：{dialect}")
 
 
 @app.get("/", include_in_schema=False)
@@ -60,9 +65,9 @@ def health() -> dict[str, object]:
                 "name": voice_clone_service.model_name,
                 "ready": voice_clone_service.model_ready,
                 "repo": settings.cosyvoice_repo,
-                "model_dir": settings.cosyvoice_model_dir,
                 "matcha_tts": str(matcha_dir or ""),
                 "matcha_ready": bool(matcha_dir and (matcha_dir / "matcha").exists()),
+                "profiles": voice_clone_service.all_profile_statuses(),
             },
             "live2d": "disabled",
         },
@@ -81,6 +86,7 @@ async def evaluate(
     stage: str = Form("discover"),
     audio: UploadFile | None = File(None),
 ) -> dict[str, object]:
+    _require_supported_dialect(dialect)
     audio_bytes = await audio.read() if audio else b""
     return await run_in_threadpool(
         assessment_service.evaluate,
@@ -99,6 +105,7 @@ async def clone_preview(
     prompt_text: str | None = Form(None),
     speaker_audio: UploadFile | None = File(None),
 ) -> dict[str, object]:
+    _require_supported_dialect(dialect)
     speaker_bytes = await speaker_audio.read() if speaker_audio else b""
     return await run_in_threadpool(
         voice_clone_service.create_preview,

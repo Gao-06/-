@@ -34,7 +34,15 @@ os.environ["TMPDIR"] = str(RUNTIME_TMP_DIR)
 DEFAULT_SENSEVOICE_ENGINE_DIR = Path(r"D:\shenggui\SenseVoice")
 DEFAULT_SENSEVOICE_PUBLIC_DIR = Path(r"D:\shenggui\SenseVoicePublic")
 DEFAULT_COSYVOICE_REPO = Path(r"D:\shenggui\CosyVoice\CosyVoice-main")
-DEFAULT_COSYVOICE_MODEL_DIR = Path(r"D:\shenggui\CosyVoice\CosyVoice3-5B")
+DEFAULT_COSYVOICE2_CHUAN_MODEL_DIR = Path(
+    r"D:\shenggui\CosyVoice2-Chuan\pretrained_models\chuan\CosyVoice2-Chuan"
+)
+DEFAULT_COSYVOICE2_WU_MODEL_DIR = Path(
+    r"D:\shenggui\CosyVoice2-Wu\pretrained_models\ASLP-lab\WenetSpeech-Wu-Speech-Generation\CosyVoice2"
+)
+DEFAULT_COSYVOICE2_YUE_MODEL_DIR = Path(
+    r"D:\shenggui\CosyVoice2-Yue\pretrained_models\yue\CosyVoice2-Yue-ZoengJyutGaai\CosyVoice2-yue-zjg"
+)
 
 
 def _get_bool(name: str, default: bool) -> bool:
@@ -65,6 +73,44 @@ def _find_gguf(root: Path, *, include: tuple[str, ...], exclude: tuple[str, ...]
     return None
 
 
+def _first_existing_path(*candidates: Path) -> Path:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+@dataclass(frozen=True)
+class VoiceCloneProfile:
+    dialect: str
+    display_name: str
+    family: str
+    model_dir: str
+    repo: str | None = None
+    fallback: bool = False
+    note: str = ""
+
+    @property
+    def model_path(self) -> Path:
+        return Path(self.model_dir)
+
+    @property
+    def ready(self) -> bool:
+        return self.model_path.exists()
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "dialect": self.dialect,
+            "display_name": self.display_name,
+            "family": self.family,
+            "model_dir": self.model_dir,
+            "repo": self.repo or "",
+            "fallback": self.fallback,
+            "note": self.note,
+            "ready": self.ready,
+        }
+
+
 @dataclass(frozen=True)
 class Settings:
     model_backend: str = os.getenv("SHENGGUI_MODEL_BACKEND", "mock").strip().lower()
@@ -90,9 +136,22 @@ class Settings:
     sensevoice_max_segment_ms: int = _get_int("SHENGGUI_SENSEVOICE_MAX_SEGMENT_MS", 30000)
 
     cosyvoice_repo: str | None = os.getenv("SHENGGUI_COSYVOICE_REPO", str(DEFAULT_COSYVOICE_REPO))
-    cosyvoice_model_dir: str = os.getenv(
-        "SHENGGUI_COSYVOICE_MODEL_DIR",
-        str(DEFAULT_COSYVOICE_MODEL_DIR),
+    cosyvoice_chuan_model_dir: str = os.getenv(
+        "SHENGGUI_COSYVOICE_CHUAN_MODEL_DIR",
+        str(DEFAULT_COSYVOICE2_CHUAN_MODEL_DIR),
+    )
+    cosyvoice_wu_model_dir: str = os.getenv(
+        "SHENGGUI_COSYVOICE_WU_MODEL_DIR",
+        str(DEFAULT_COSYVOICE2_WU_MODEL_DIR),
+    )
+    cosyvoice_yue_model_dir: str = os.getenv(
+        "SHENGGUI_COSYVOICE_YUE_MODEL_DIR",
+        str(
+            _first_existing_path(
+                DEFAULT_COSYVOICE2_YUE_MODEL_DIR,
+                Path(r"D:\shenggui\CosyVoice2-Yue\pretrained_models\yue\CosyVoice2-Yue\CosyVoice2-yue-base"),
+            )
+        ),
     )
     cosyvoice_audio_dir: Path = RUNTIME_AUDIO_DIR
     generated_audio_dir: Path = GENERATED_AUDIO_DIR
@@ -132,6 +191,36 @@ class Settings:
     @property
     def use_local_models(self) -> bool:
         return self.model_backend == "local"
+
+    def voice_clone_profiles(self) -> dict[str, VoiceCloneProfile]:
+        repo = self.cosyvoice_repo
+        return {
+            "yue": VoiceCloneProfile(
+                dialect="yue",
+                display_name="粤语专用 CosyVoice2",
+                family="CosyVoice 2",
+                model_dir=self.cosyvoice_yue_model_dir,
+                repo=repo,
+            ),
+            "wu": VoiceCloneProfile(
+                dialect="wu",
+                display_name="吴语专用 CosyVoice2",
+                family="CosyVoice 2",
+                model_dir=self.cosyvoice_wu_model_dir,
+                repo=repo,
+            ),
+            "southwest": VoiceCloneProfile(
+                dialect="southwest",
+                display_name="西南官话专用 CosyVoice2",
+                family="CosyVoice 2",
+                model_dir=self.cosyvoice_chuan_model_dir,
+                repo=repo,
+            ),
+        }
+
+    def voice_clone_profile(self, dialect: str) -> VoiceCloneProfile:
+        profiles = self.voice_clone_profiles()
+        return profiles.get(dialect, profiles["yue"])
 
 
 settings = Settings()
